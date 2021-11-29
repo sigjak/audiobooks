@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-//import 'package:just_audio_background/just_audio_background.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
 import './common.dart';
@@ -33,10 +33,19 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   prepPlaylist() {
     for (int i = 0; i < widget.sections.length; i++) {
       var goo = AudioSource.uri(Uri.parse(widget.sections[i]),
-          tag: AudioMetadata(
-              album: '${widget.selectedBook.bookTitle} - ${i + 1}',
-              title: widget.selectedBook.bookAuthor!,
-              artwork: widget.selectedBook.bookImage!));
+          // tag: AudioMetadata(
+          //     album: '${widget.selectedBook.bookTitle} - ${i + 1}',
+          //     title: widget.selectedBook.bookAuthor!,
+          //     artwork: widget.selectedBook.bookImage!)
+          tag: MediaItem(
+            id: i.toString(),
+            album: '${widget.selectedBook.bookTitle} - ${i + 1}',
+            title: widget.selectedBook.bookAuthor!,
+            extras: {'artwork': widget.selectedBook.bookImage!},
+          )
+          // extras: {'kokko': 12}),
+          );
+
       source.add(goo);
     }
     _playlist = ConcatenatingAudioSource(children: source);
@@ -96,19 +105,19 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                 builder: (context, snapshot) {
                   final state = snapshot.data;
                   if (state?.sequence.isEmpty ?? true) return const SizedBox();
-                  final metadata = state!.currentSource!.tag as AudioMetadata;
+                  final metadata = state!.currentSource!.tag as MediaItem;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Image(
-                          image: MemoryImage(metadata.artwork),
+                          image: MemoryImage(metadata.extras!['artwork']),
                           fit: BoxFit.cover,
                           width: 280,
                         ),
                       ),
-                      Text(metadata.album),
+                      Text(metadata.album!),
                       Text(metadata.title),
                     ],
                   );
@@ -139,7 +148,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
 class ControlButtons extends StatelessWidget {
   final AudioPlayer player;
 
-  ControlButtons(this.player);
+  const ControlButtons(this.player, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +199,7 @@ class ControlButtons extends StatelessWidget {
               );
             } else if (processingState != ProcessingState.completed) {
               return IconButton(
-                icon: Icon(Icons.pause),
+                icon: const Icon(Icons.pause),
                 iconSize: 64.0,
                 onPressed: player.pause,
               );

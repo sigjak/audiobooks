@@ -15,7 +15,8 @@ class SeekBar extends StatefulWidget {
     required this.bufferedPosition,
     this.onChanged,
     this.onChangeEnd,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   _SeekBarState createState() => _SeekBarState();
