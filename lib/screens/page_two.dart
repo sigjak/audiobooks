@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -156,6 +156,35 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                     ],
                   );
                 }),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                    onPressed: () {
+                      Duration newPos =
+                          _player.position - Duration(seconds: 30);
+                      if (newPos.inMilliseconds < 0) {
+                        newPos = Duration.zero;
+                      }
+                      _player.seek(newPos);
+                      _player.play();
+                    },
+                    icon: Icon(Icons.replay_30)),
+                IconButton(
+                    onPressed: () {
+                      print(_player.duration);
+                      Duration newPos =
+                          _player.position + Duration(seconds: 30);
+                      if (newPos.inMilliseconds >
+                          _player.duration!.inMilliseconds) {
+                        newPos = _player.duration! - Duration(seconds: 5);
+                      }
+                      _player.seek(newPos);
+                      _player.play();
+                    },
+                    icon: Icon(Icons.forward_30))
+              ],
+            ),
             StreamBuilder<PositionData>(
               stream: _positionDataStream,
               builder: (context, snapshot) {
