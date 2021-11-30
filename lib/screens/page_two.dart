@@ -4,6 +4,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import './common.dart';
 import '../models/book.dart';
 
@@ -63,15 +65,46 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     try {
       // Preloading audio is not currently supported on Linux.
       await _player.setAudioSource(_playlist);
+
+      await getSavedPosition();
     } catch (e) {
       // Catch load errors: 404, invalid url...
       print("Error loading audio source: $e");
     }
   }
 
+  Future<void> savePosition() async {
+    int sectionIndex = _player.sequenceState!.currentIndex;
+    String temp = _player.sequenceState?.currentSource!.tag.album;
+    String current = temp.split(' -').first;
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int pos = _player.position.inMilliseconds;
+
+    await prefs.setStringList(
+        'playerPosition', [current, pos.toString(), sectionIndex.toString()]);
+  }
+
+  Future getSavedPosition() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> saved =
+        prefs.getStringList('playerPosition') ?? ['', '0', '0'];
+    String temp = _player.sequenceState?.currentSource!.tag.album;
+    String currentSelection = temp.split(' -').first;
+
+    String savedSection = saved[0];
+    Duration pos = Duration(milliseconds: int.parse(saved[1]));
+    // print(pos);
+    int sect = int.parse(saved[2]);
+    if (currentSelection == savedSection) {
+      _player.seek(pos, index: sect);
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance?.removeObserver(this);
+    savePosition();
     _player.dispose();
     super.dispose();
   }
@@ -140,6 +173,13 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
             ControlButtons(_player),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        child: const Icon(Icons.exit_to_app),
+        onPressed: () {
+          savePosition();
+          SystemNavigator.pop();
+        },
       ),
     );
   }
@@ -244,14 +284,14 @@ class ControlButtons extends StatelessWidget {
   }
 }
 
-class AudioMetadata {
-  final String album;
-  final String title;
-  final Uint8List artwork;
+// class AudioMetadata {
+//   final String album;
+//   final String title;
+//   final Uint8List artwork;
 
-  AudioMetadata({
-    required this.album,
-    required this.title,
-    required this.artwork,
-  });
-}
+//   AudioMetadata({
+//     required this.album,
+//     required this.title,
+//     required this.artwork,
+//   });
+// }

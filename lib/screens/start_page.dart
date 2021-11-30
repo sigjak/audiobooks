@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
@@ -161,6 +161,12 @@ class _StartPageState extends State<StartPage> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        child: const Icon(Icons.exit_to_app),
+        onPressed: () {
+          SystemNavigator.pop();
+        },
       ),
     );
   }
