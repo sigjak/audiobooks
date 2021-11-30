@@ -80,9 +80,10 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int pos = _player.position.inMilliseconds;
-
-    await prefs.setStringList(
-        'playerPosition', [current, pos.toString(), sectionIndex.toString()]);
+    if (pos > 125000) {
+      await prefs.setStringList(
+          'playerPosition', [current, pos.toString(), sectionIndex.toString()]);
+    }
   }
 
   Future getSavedPosition() async {
