@@ -165,7 +165,8 @@ class _StartPageState extends State<StartPage> {
       floatingActionButton: FloatingActionButton.small(
         child: const Icon(Icons.exit_to_app),
         onPressed: () {
-          SystemNavigator.pop();
+          dispose();
+          SystemChannels.platform.invokeMethod('SystemNavigator.pop');
         },
       ),
     );
