@@ -43,9 +43,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
             album: '${widget.selectedBook.bookTitle} - ${i + 1}',
             title: widget.selectedBook.bookAuthor!,
             extras: {'artwork': widget.selectedBook.bookImage!},
-          )
-          // extras: {'kokko': 12}),
-          );
+          ));
 
       source.add(goo);
     }
@@ -58,8 +56,9 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     // Listen to errors during playback.
     _player.playbackEventStream.listen((event) {},
         onError: (Object e, StackTrace stackTrace) {
-      // ignore: avoid_print
-      print('A stream error occurred: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('A stream error occurred: $e')));
+      // print('A stream error occurred: $e');
     });
     try {
       // Preloading audio is not currently supported on Linux.
@@ -68,7 +67,9 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
       await getSavedPosition();
     } catch (e) {
       // Catch load errors: 404, invalid url...
-      print("Error loading audio source: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading audio source: $e")));
+      // print("Error loading audio source: $e");
     }
   }
 
@@ -161,27 +162,26 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                 IconButton(
                     onPressed: () {
                       Duration newPos =
-                          _player.position - Duration(seconds: 30);
+                          _player.position - const Duration(seconds: 30);
                       if (newPos.inMilliseconds < 0) {
                         newPos = Duration.zero;
                       }
                       _player.seek(newPos);
                       _player.play();
                     },
-                    icon: Icon(Icons.replay_30)),
+                    icon: const Icon(Icons.replay_30)),
                 IconButton(
                     onPressed: () {
-                      print(_player.duration);
                       Duration newPos =
-                          _player.position + Duration(seconds: 30);
+                          _player.position + const Duration(seconds: 30);
                       if (newPos.inMilliseconds >
                           _player.duration!.inMilliseconds) {
-                        newPos = _player.duration! - Duration(seconds: 5);
+                        newPos = _player.duration! - const Duration(seconds: 5);
                       }
                       _player.seek(newPos);
                       _player.play();
                     },
-                    icon: Icon(Icons.forward_30))
+                    icon: const Icon(Icons.forward_30))
               ],
             ),
             StreamBuilder<PositionData>(
