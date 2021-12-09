@@ -42,7 +42,8 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
             id: i.toString(),
             album: '${widget.selectedBook.bookTitle} - ${i + 1}',
             title: widget.selectedBook.bookAuthor!,
-            extras: {'artwork': widget.selectedBook.bookImage!},
+            extras: {'artwork': widget.selectedBook.bookImage!,
+            'lastPosition':Duration.zero}, // check this
           ));
 
       source.add(goo);
