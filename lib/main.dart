@@ -1,5 +1,7 @@
+import 'package:audiobook_app/sql/sql_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import './screens/start_page.dart';
 
@@ -12,7 +14,9 @@ Future main() async {
     androidNotificationChannelName: 'Audio playback',
     androidNotificationOngoing: true,
   );
-  runApp(const MyApp());
+  runApp(MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => SqlFunctions())],
+      child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {

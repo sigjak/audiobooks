@@ -4,7 +4,9 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../sql/sql_functions.dart';
 import './common.dart';
 import '../models/book.dart';
 
@@ -33,7 +35,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
 
   prepPlaylist() {
     for (int i = 0; i < widget.sections.length; i++) {
-      var goo = AudioSource.uri(Uri.parse(widget.sections[i]),
+      var bookSection = AudioSource.uri(Uri.parse(widget.sections[i]),
           // tag: AudioMetadata(
           //     album: '${widget.selectedBook.bookTitle} - ${i + 1}',
           //     title: widget.selectedBook.bookAuthor!,
@@ -42,11 +44,13 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
             id: i.toString(),
             album: '${widget.selectedBook.bookTitle} - ${i + 1}',
             title: widget.selectedBook.bookAuthor!,
-            extras: {'artwork': widget.selectedBook.bookImage!,
-            'lastPosition':Duration.zero}, // check this
+            extras: {
+              'artwork': widget.selectedBook.bookImage!,
+              'lastPosition': Duration.zero
+            }, // check this
           ));
 
-      source.add(goo);
+      source.add(bookSection);
     }
     _playlist = ConcatenatingAudioSource(children: source);
   }
@@ -63,9 +67,16 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     });
     try {
       // Preloading audio is not currently supported on Linux.
+      String temp = _player.sequenceState?.currentSource!.tag.album;
+      String currentSelection = temp.split(' -').first;
       await _player.setAudioSource(_playlist);
-
-      await getSavedPosition();
+      Book currentPositionData = await context
+          .watch<SqlFunctions>()
+          .getSavedPosition(currentSelection);
+      _player.seek(currentPositionData.lastPosition,
+          index: currentPositionData.sectionIndex);
+      print(currentPositionData.bookTitle);
+      // await getSavedPosition();
     } catch (e) {
       // Catch load errors: 404, invalid url...
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,21 +98,21 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     }
   }
 
-  Future getSavedPosition() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> saved =
-        prefs.getStringList('playerPosition') ?? ['', '0', '0'];
-    String temp = _player.sequenceState?.currentSource!.tag.album;
-    String currentSelection = temp.split(' -').first;
+  // Future getSavedPosition() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   List<String> saved =
+  //       prefs.getStringList('playerPosition') ?? ['', '0', '0'];
+  //   String temp = _player.sequenceState?.currentSource!.tag.album;
+  //   String currentSelection = temp.split(' -').first;
 
-    String savedSection = saved[0];
-    Duration pos = Duration(milliseconds: int.parse(saved[1]));
-    // print(pos);
-    int sect = int.parse(saved[2]);
-    if (currentSelection == savedSection) {
-      _player.seek(pos, index: sect);
-    }
-  }
+  //   String savedSection = saved[0];
+  //   Duration pos = Duration(milliseconds: int.parse(saved[1]));
+  //   // print(pos);
+  //   int sect = int.parse(saved[2]);
+  //   if (currentSelection == savedSection) {
+  //     _player.seek(pos, index: sect);
+  //   }
+  // }
 
   @override
   void dispose() {

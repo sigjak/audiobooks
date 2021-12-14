@@ -5,7 +5,7 @@ import '../models/book.dart';
 class BookDatabase {
   String bookTable = 'sqlBook';
   // String positionTable = 'savedPosition';
-  List<String> columnFields = ['bookTitle', 'lastPosition'];
+  // List<String> columnFields = ['bookTitle', 'lastPosition'];
   static final BookDatabase instance = BookDatabase._initialize();
 
   static Database? _database;
@@ -15,7 +15,8 @@ class BookDatabase {
     const numberType = "INTEGER";
     await db.execute('''CREATE TABLE $bookTable (
       'bookTitle $textType,
-      'lastPosition' $numberType
+      'lastPosition' $numberType,
+      'sectionIndex' $numberType
     )''');
   }
 
@@ -35,16 +36,17 @@ class BookDatabase {
       return _database;
     } else {
       _database = await _initDB('positions.db');
+      return _database;
     }
   }
 
-  Future<int> createPosition(Book book) async {
+  Future<int> initPosition(Book book) async {
     final db = await instance.database;
     int saved = await db!.insert(bookTable, book.toJson());
     return saved;
   }
 
-  Future<Book> getBook(String currentTitle) async {
+  Future<Book> getSavedPosition(String currentTitle) async {
     final db = await instance.database;
     final maps = await db!.query(bookTable,
         // columns: columnFields,
@@ -53,7 +55,70 @@ class BookDatabase {
     if (maps.isNotEmpty) {
       return Book.fromJson(maps.first);
     } else {
-      throw Exception('$currentTitle not found');
+      return Book(
+          bookTitle: currentTitle,
+          lastPosition: const Duration(milliseconds: 0),
+          sectionIndex: 1);
     }
   }
+
+//   Future<Book> getBook(String currentTitle) async {
+//     final db = await instance.database;
+//     final maps = await db!.query(bookTable,
+//         columns: columnFields,
+//         where: 'bookTitle = ?',
+//         whereArgs: [currentTitle]);
+//     if (maps.isNotEmpty) {
+//       return Book.fromJson(maps.first);
+//     } else {
+//       throw Exception('$currentTitle not found');
+//     }
+//   }
+// }
+  // Future<int> createPosition(Book book) async {
+  //   final db = await instance.database;
+  //   int saved = await db!.insert(bookTable, book.toJson());
+  //   return saved;
+  // }
+
+  // Future<Duration?> getSavedPosition(String currentTitle) async {
+  //   final db = await instance.database;
+  //   final maps = await db!.query(bookTable,
+  //       // columns: columnFields,
+  //       where: 'bookTitle = ?',
+  //       whereArgs: [currentTitle]);
+  //   if (maps.isNotEmpty) {
+  //     return Book.fromJson(maps.first).lastPosition;
+  //   } else {
+  //     throw Exception('$currentTitle not found');
+  //   }
+  // }
+
+  // Future<int> updatePosition(String bookName, Duration pos, int section) async {
+  //   int position = pos.inMilliseconds;
+  //   final db = await instance.database;
+  //   int update = await db!.rawUpdate('''
+  //   UPDATE $bookTable SET lastPosition = ?, sectionIndex =? WHERE bookTitle = ?
+  //   ''', [position, bookName, section]);
+  //   return update;
+  // }
+
+  // Future<List<Book>> getAllBooks() async {
+  //   List<Book> booklist = [];
+  //   final db = await instance.database;
+  //   var maps = await db!.query(bookTable);
+
+  //   maps.forEach((element) {
+  //     booklist.add(Book.fromJson(element));
+  //   });
+
+  //   return booklist;
+  // }
+
+  // Future deleteBook(String bookName) async {
+  //   final db = await instance.database;
+  //   int del = await db!
+  //       .delete(bookTable, where: 'bookTitle =?', whereArgs: [bookName]);
+  //   print(del);
+  // }
 }
