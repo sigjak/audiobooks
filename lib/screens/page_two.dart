@@ -54,17 +54,21 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.speech());
     // Listen to errors during playback.
+
     _player.playbackEventStream.listen((event) {},
         onError: (Object e, StackTrace stackTrace) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('A stream error occurred: $e')));
       // print('A stream error occurred: $e');
     });
+
     try {
       // Preloading audio is not currently supported on Linux.
       await _player.setAudioSource(_playlist);
-
-      await getSavedPosition();
+      String temp = await _player.sequenceState!.currentSource!.tag.album;
+      String currentSelection = temp.split(' -').first;
+      print(currentSelection);
+      // await getSavedPosition();
     } catch (e) {
       // Catch load errors: 404, invalid url...
       ScaffoldMessenger.of(context).showSnackBar(
