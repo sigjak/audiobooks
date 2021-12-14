@@ -33,7 +33,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
 
   prepPlaylist() {
     for (int i = 0; i < widget.sections.length; i++) {
-      var goo = AudioSource.uri(Uri.parse(widget.sections[i]),
+      var bookSection = AudioSource.uri(Uri.parse(widget.sections[i]),
           // tag: AudioMetadata(
           //     album: '${widget.selectedBook.bookTitle} - ${i + 1}',
           //     title: widget.selectedBook.bookAuthor!,
@@ -45,7 +45,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
             extras: {'artwork': widget.selectedBook.bookImage!},
           ));
 
-      source.add(goo);
+      source.add(bookSection);
     }
     _playlist = ConcatenatingAudioSource(children: source);
   }
