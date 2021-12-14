@@ -56,6 +56,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   }
 
   Future<void> _init() async {
+    print('init');
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.speech());
     // Listen to errors during playback.
@@ -66,15 +67,19 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
       // print('A stream error occurred: $e');
     });
     try {
+      print('initcccccccccccccccc');
       // Preloading audio is not currently supported on Linux.
       String temp = _player.sequenceState?.currentSource!.tag.album;
+      print(temp);
       String currentSelection = temp.split(' -').first;
+      print(currentSelection);
       await _player.setAudioSource(_playlist);
+
       Book currentPositionData = await context
           .watch<SqlFunctions>()
           .getSavedPosition(currentSelection);
-      _player.seek(currentPositionData.lastPosition,
-          index: currentPositionData.sectionIndex);
+      // _player.seek(currentPositionData.lastPosition,
+      //     index: currentPositionData.sectionIndex);
       print(currentPositionData.bookTitle);
       // await getSavedPosition();
     } catch (e) {

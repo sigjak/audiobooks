@@ -3,11 +3,11 @@ import '../models/book.dart';
 import './book_dbase.dart';
 
 class SqlFunctions with ChangeNotifier {
-  Future getSavedPosition(String currentTitle) async {
+  Future<Book> getSavedPosition(String currentTitle) async {
     Book positionData = Book(
         bookTitle: currentTitle,
         lastPosition: const Duration(milliseconds: 0),
-        sectionIndex: 1);
+        sectionIndex: 0);
     try {
       positionData = await BookDatabase.instance.getSavedPosition(currentTitle);
     } catch (e) {}
