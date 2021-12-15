@@ -160,35 +160,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                       ],
                     );
                   }),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                      onPressed: () {
-                        Duration newPos =
-                            _player.position - const Duration(seconds: 30);
-                        if (newPos.inMilliseconds < 0) {
-                          newPos = Duration.zero;
-                        }
-                        _player.seek(newPos);
-                        _player.play();
-                      },
-                      icon: const Icon(Icons.replay_30)),
-                  IconButton(
-                      onPressed: () {
-                        Duration newPos =
-                            _player.position + const Duration(seconds: 30);
-                        if (newPos.inMilliseconds >
-                            _player.duration!.inMilliseconds) {
-                          newPos =
-                              _player.duration! - const Duration(seconds: 5);
-                        }
-                        _player.seek(newPos);
-                        _player.play();
-                      },
-                      icon: const Icon(Icons.forward_30))
-                ],
-              ),
+              ControlButtons(_player),
               StreamBuilder<PositionData>(
                 stream: _positionDataStream,
                 builder: (context, snapshot) {
@@ -204,7 +176,6 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                   );
                 },
               ),
-              ControlButtons(_player),
             ],
           ),
         ),
@@ -232,6 +203,16 @@ class ControlButtons extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        IconButton(
+            onPressed: () {
+              Duration newPos = player.position - const Duration(seconds: 30);
+              if (newPos.inMilliseconds < 0) {
+                newPos = Duration.zero;
+              }
+              player.seek(newPos);
+              player.play();
+            },
+            icon: const Icon(Icons.replay_30)),
         IconButton(
           icon: const Icon(Icons.volume_up),
           onPressed: () {
@@ -316,19 +297,17 @@ class ControlButtons extends StatelessWidget {
             },
           ),
         ),
+        IconButton(
+            onPressed: () {
+              Duration newPos = player.position + const Duration(seconds: 30);
+              if (newPos.inMilliseconds > player.duration!.inMilliseconds) {
+                newPos = player.duration! - const Duration(seconds: 5);
+              }
+              player.seek(newPos);
+              player.play();
+            },
+            icon: const Icon(Icons.forward_30))
       ],
     );
   }
 }
-
-// class AudioMetadata {
-//   final String album;
-//   final String title;
-//   final Uint8List artwork;
-
-//   AudioMetadata({
-//     required this.album,
-//     required this.title,
-//     required this.artwork,
-//   });
-// }
