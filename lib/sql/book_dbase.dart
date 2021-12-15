@@ -14,9 +14,9 @@ class BookDatabase {
     const textType = "TEXT NOT NULL";
     const numberType = "INTEGER";
     await db.execute('''CREATE TABLE $bookTable (
-      'bookTitle $textType,
-      'lastPosition' $numberType,
-      'sectionIndex' $numberType
+      bookTitle $textType,
+      lastPosition $numberType,
+      sectionIndex $numberType
     )''');
   }
 
@@ -56,10 +56,18 @@ class BookDatabase {
       return Book.fromJson(maps.first);
     } else {
       return Book(
-          bookTitle: currentTitle,
-          lastPosition: const Duration(milliseconds: 0),
-          sectionIndex: 1);
+        bookTitle: 'Nothing saved',
+      );
     }
+  }
+
+  Future<int> updatePosition(String bookName, Duration pos, int section) async {
+    int position = pos.inMilliseconds;
+    final db = await instance.database;
+    int update = await db!.rawUpdate(''' 
+    UPDATE $bookTable SET lastPosition = ?, sectionIndex =? WHERE bookTitle = ?
+    ''', [position, section, bookName]);
+    return update;
   }
 
 //   Future<Book> getBook(String currentTitle) async {

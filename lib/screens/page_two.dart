@@ -5,7 +5,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+//import 'package:shared_preferences/shared_preferences.dart';
 import '../sql/sql_functions.dart';
 import './common.dart';
 import '../models/book.dart';
@@ -22,6 +22,7 @@ class PageTwo extends StatefulWidget {
 
 class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   late ConcatenatingAudioSource _playlist;
+  late String currentTitle;
   List<AudioSource> source = [];
   late AudioPlayer _player;
   @override
@@ -46,7 +47,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
             title: widget.selectedBook.bookAuthor!,
             extras: {
               'artwork': widget.selectedBook.bookImage!,
-              'lastPosition': Duration.zero
+              // 'lastPosition': Duration.zero
             }, // check this
           ));
 
@@ -56,7 +57,6 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   }
 
   Future<void> _init() async {
-    print('init');
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.speech());
     // Listen to errors during playback.
@@ -67,62 +67,41 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
       // print('A stream error occurred: $e');
     });
     try {
-      print('initcccccccccccccccc');
       // Preloading audio is not currently supported on Linux.
-      String temp = _player.sequenceState?.currentSource!.tag.album;
-      print(temp);
-      String currentSelection = temp.split(' -').first;
-      print(currentSelection);
       await _player.setAudioSource(_playlist);
+      String temp = await _player.sequenceState!.currentSource!.tag.album;
+      String currentSelection = temp.split(' -').first;
+      setState(() {
+        currentTitle = currentSelection;
+      });
+      // await _player.setAudioSource(_playlist);
 
-      Book currentPositionData = await context
-          .watch<SqlFunctions>()
-          .getSavedPosition(currentSelection);
-      // _player.seek(currentPositionData.lastPosition,
-      //     index: currentPositionData.sectionIndex);
-      print(currentPositionData.bookTitle);
-      // await getSavedPosition();
+      Book currentPosition =
+          await context.read<SqlFunctions>().getSavedPosition(currentSelection);
+      if (currentPosition.bookTitle == 'Nothing saved') {
+        Book initPos = Book(
+            bookTitle: currentTitle,
+            lastPosition: _player.position,
+            sectionIndex: _player.currentIndex);
+        await context.read<SqlFunctions>().savePosition(initPos);
+      } else {
+        // seek to a saved position
+
+        await _player.seek(currentPosition.lastPosition,
+            index: currentPosition.sectionIndex);
+      }
     } catch (e) {
       // Catch load errors: 404, invalid url...
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error loading audio source: $e")));
-      // print("Error loading audio source: $e");
+      //print("Error loading audio source: $e");
     }
   }
-
-  Future<void> savePosition() async {
-    int sectionIndex = _player.sequenceState!.currentIndex;
-    String temp = _player.sequenceState?.currentSource!.tag.album;
-    String current = temp.split(' -').first;
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int pos = _player.position.inMilliseconds;
-    if (pos > 125000) {
-      await prefs.setStringList(
-          'playerPosition', [current, pos.toString(), sectionIndex.toString()]);
-    }
-  }
-
-  // Future getSavedPosition() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   List<String> saved =
-  //       prefs.getStringList('playerPosition') ?? ['', '0', '0'];
-  //   String temp = _player.sequenceState?.currentSource!.tag.album;
-  //   String currentSelection = temp.split(' -').first;
-
-  //   String savedSection = saved[0];
-  //   Duration pos = Duration(milliseconds: int.parse(saved[1]));
-  //   // print(pos);
-  //   int sect = int.parse(saved[2]);
-  //   if (currentSelection == savedSection) {
-  //     _player.seek(pos, index: sect);
-  //   }
-  // }
 
   @override
   void dispose() {
     WidgetsBinding.instance?.removeObserver(this);
-    savePosition();
+
     _player.dispose();
     super.dispose();
   }
@@ -137,96 +116,107 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Audiobooks'),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-            image: DecorationImage(
-          image: AssetImage("assets/images/gos2.jpg"),
-          fit: BoxFit.cover,
-        )),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StreamBuilder<SequenceState?>(
-                stream: _player.sequenceStateStream,
-                builder: (context, snapshot) {
-                  final state = snapshot.data;
-                  if (state?.sequence.isEmpty ?? true) return const SizedBox();
-                  final metadata = state!.currentSource!.tag as MediaItem;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Image(
-                          image: MemoryImage(metadata.extras!['artwork']),
-                          fit: BoxFit.cover,
-                          width: 280,
-                        ),
-                      ),
-                      Text(metadata.album!),
-                      Text(metadata.title),
-                    ],
-                  );
-                }),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                    onPressed: () {
-                      Duration newPos =
-                          _player.position - const Duration(seconds: 30);
-                      if (newPos.inMilliseconds < 0) {
-                        newPos = Duration.zero;
-                      }
-                      _player.seek(newPos);
-                      _player.play();
-                    },
-                    icon: const Icon(Icons.replay_30)),
-                IconButton(
-                    onPressed: () {
-                      Duration newPos =
-                          _player.position + const Duration(seconds: 30);
-                      if (newPos.inMilliseconds >
-                          _player.duration!.inMilliseconds) {
-                        newPos = _player.duration! - const Duration(seconds: 5);
-                      }
-                      _player.seek(newPos);
-                      _player.play();
-                    },
-                    icon: const Icon(Icons.forward_30))
-              ],
-            ),
-            StreamBuilder<PositionData>(
-              stream: _positionDataStream,
-              builder: (context, snapshot) {
-                final positionData = snapshot.data;
-                return SeekBar(
-                  duration: positionData?.duration ?? Duration.zero,
-                  position: positionData?.position ?? Duration.zero,
-                  bufferedPosition:
-                      positionData?.bufferedPosition ?? Duration.zero,
-                  onChangeEnd: (newPosition) {
-                    _player.seek(newPosition);
-                  },
-                );
-              },
-            ),
-            ControlButtons(_player),
-          ],
+    return WillPopScope(
+      onWillPop: () async {
+        await context.read<SqlFunctions>().updatePosition(
+            currentTitle, _player.position, _player.currentIndex!);
+        return Future.value(true);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Audiobooks'),
+          centerTitle: true,
         ),
-      ),
-      floatingActionButton: FloatingActionButton.small(
-        child: const Icon(Icons.exit_to_app),
-        onPressed: () {
-          savePosition();
-          dispose();
-          SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-        },
+        body: Container(
+          decoration: const BoxDecoration(
+              image: DecorationImage(
+            image: AssetImage("assets/images/gos2.jpg"),
+            fit: BoxFit.cover,
+          )),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              StreamBuilder<SequenceState?>(
+                  stream: _player.sequenceStateStream,
+                  builder: (context, snapshot) {
+                    final state = snapshot.data;
+                    if (state?.sequence.isEmpty ?? true) {
+                      return const SizedBox();
+                    }
+                    final metadata = state!.currentSource!.tag as MediaItem;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Image(
+                            image: MemoryImage(metadata.extras!['artwork']),
+                            fit: BoxFit.cover,
+                            width: 280,
+                          ),
+                        ),
+                        Text(metadata.album!),
+                        Text(metadata.title),
+                      ],
+                    );
+                  }),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                      onPressed: () {
+                        Duration newPos =
+                            _player.position - const Duration(seconds: 30);
+                        if (newPos.inMilliseconds < 0) {
+                          newPos = Duration.zero;
+                        }
+                        _player.seek(newPos);
+                        _player.play();
+                      },
+                      icon: const Icon(Icons.replay_30)),
+                  IconButton(
+                      onPressed: () {
+                        Duration newPos =
+                            _player.position + const Duration(seconds: 30);
+                        if (newPos.inMilliseconds >
+                            _player.duration!.inMilliseconds) {
+                          newPos =
+                              _player.duration! - const Duration(seconds: 5);
+                        }
+                        _player.seek(newPos);
+                        _player.play();
+                      },
+                      icon: const Icon(Icons.forward_30))
+                ],
+              ),
+              StreamBuilder<PositionData>(
+                stream: _positionDataStream,
+                builder: (context, snapshot) {
+                  final positionData = snapshot.data;
+                  return SeekBar(
+                    duration: positionData?.duration ?? Duration.zero,
+                    position: positionData?.position ?? Duration.zero,
+                    bufferedPosition:
+                        positionData?.bufferedPosition ?? Duration.zero,
+                    onChangeEnd: (newPosition) {
+                      _player.seek(newPosition);
+                    },
+                  );
+                },
+              ),
+              ControlButtons(_player),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.small(
+          child: const Icon(Icons.exit_to_app),
+          onPressed: () async {
+            await context.read<SqlFunctions>().updatePosition(
+                currentTitle, _player.position, _player.currentIndex!);
+            dispose();
+            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+          },
+        ),
       ),
     );
   }
