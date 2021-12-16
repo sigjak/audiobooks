@@ -27,4 +27,8 @@ class SqlFunctions with ChangeNotifier {
     } catch (e) {}
     return uppd;
   }
+
+  Future deleteBookEntry(String bookName) async {
+    await BookDatabase.instance.deleteBook(bookName);
+  }
 }

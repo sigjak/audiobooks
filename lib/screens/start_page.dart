@@ -1,9 +1,12 @@
 import 'dart:typed_data';
+import 'package:audiobook_app/sql/sql_functions.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audiotagger/audiotagger.dart';
+import 'package:provider/provider.dart';
+import '../sql/sql_functions.dart';
 import './page_two.dart';
 import '../models/book.dart';
 
@@ -19,10 +22,16 @@ class StartPage extends StatefulWidget {
 class _StartPageState extends State<StartPage> {
   final tagger = Audiotagger();
   List<List<String>> listOfSections = [];
-
+  List<Directory> dirList = []; // list of Directory paths of available books
+  List<Book> bookList = [];
+  bool isLoaded = false;
   @override
   void initState() {
-    // getBooks();
+    getBooksData().then((_) {
+      setState(() {
+        isLoaded = true;
+      });
+    });
     super.initState();
   }
 
@@ -49,12 +58,12 @@ class _StartPageState extends State<StartPage> {
     }
   }
 
-  Future<List<Book>> getBooksData() async {
+  Future<void> getBooksData() async {
     String basePath = await getDirPath();
     Directory dir = Directory(basePath);
 
     List<Book> availableBooks = [];
-    List<Directory> dirList = []; //is a list of Directory of available books
+
     if (dir.existsSync()) {
       for (FileSystemEntity f in dir.listSync()) {
         dirList.add(Directory(f.path));
@@ -86,8 +95,7 @@ class _StartPageState extends State<StartPage> {
 
       availableBooks.add(tempBook);
     }
-
-    return availableBooks;
+    bookList = [...availableBooks];
   }
 
   @override
@@ -99,6 +107,7 @@ class _StartPageState extends State<StartPage> {
       ),
       body: Center(
         child: Container(
+          width: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
                 image: AssetImage("assets/images/handr.png"),
@@ -118,46 +127,53 @@ class _StartPageState extends State<StartPage> {
                   style: TextStyle(fontSize: 32),
                 ),
               ),
-              FutureBuilder<List<Book>>(
-                  future: getBooksData(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      final data = snapshot.data as List<Book>;
-                      return Flexible(
-                        child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: data.length,
-                            itemBuilder: (context, index) {
-                              final bookData = data[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => PageTwo(
-                                              sections: listOfSections[index],
-                                              selectedBook: bookData)));
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20.0),
-                                  child: ListTile(
-                                    leading: ClipRRect(
-                                      child: Image(
-                                        image: MemoryImage(bookData.bookImage!),
-                                      ),
+              isLoaded
+                  ? Flexible(
+                      child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: bookList.length,
+                          itemBuilder: (context, index) {
+                            final bookData = bookList[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => PageTwo(
+                                            sections: listOfSections[index],
+                                            selectedBook: bookData)));
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20.0),
+                                child: ListTile(
+                                  leading: ClipRRect(
+                                    child: Image(
+                                      image: MemoryImage(bookData.bookImage!),
                                     ),
-                                    title: Text(bookData.bookTitle!),
-                                    subtitle: Text(bookData.bookAuthor!),
+                                  ),
+                                  title: Text(bookData.bookTitle!),
+                                  subtitle: Text(bookData.bookAuthor!),
+                                  trailing: IconButton(
+                                    onPressed: () async {
+                                      // Directory dir = dirList[index];
+                                      // dir.deleteSync(recursive: true);
+                                      // remove from database
+                                      await context
+                                          .read<SqlFunctions>()
+                                          .deleteBookEntry(bookData.bookTitle!);
+                                      setState(() {
+                                        bookList.removeAt(index);
+                                      });
+                                    },
+                                    icon: const Icon(Icons.delete),
                                   ),
                                 ),
-                              );
-                            }),
-                      );
-                    } else {
-                      return const CircularProgressIndicator();
-                    }
-                  }),
+                              ),
+                            );
+                          }),
+                    )
+                  : const CircularProgressIndicator(),
             ],
           ),
         ),

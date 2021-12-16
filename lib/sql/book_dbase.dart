@@ -70,63 +70,8 @@ class BookDatabase {
     return update;
   }
 
-//   Future<Book> getBook(String currentTitle) async {
-//     final db = await instance.database;
-//     final maps = await db!.query(bookTable,
-//         columns: columnFields,
-//         where: 'bookTitle = ?',
-//         whereArgs: [currentTitle]);
-//     if (maps.isNotEmpty) {
-//       return Book.fromJson(maps.first);
-//     } else {
-//       throw Exception('$currentTitle not found');
-//     }
-//   }
-// }
-  // Future<int> createPosition(Book book) async {
-  //   final db = await instance.database;
-  //   int saved = await db!.insert(bookTable, book.toJson());
-  //   return saved;
-  // }
-
-  // Future<Duration?> getSavedPosition(String currentTitle) async {
-  //   final db = await instance.database;
-  //   final maps = await db!.query(bookTable,
-  //       // columns: columnFields,
-  //       where: 'bookTitle = ?',
-  //       whereArgs: [currentTitle]);
-  //   if (maps.isNotEmpty) {
-  //     return Book.fromJson(maps.first).lastPosition;
-  //   } else {
-  //     throw Exception('$currentTitle not found');
-  //   }
-  // }
-
-  // Future<int> updatePosition(String bookName, Duration pos, int section) async {
-  //   int position = pos.inMilliseconds;
-  //   final db = await instance.database;
-  //   int update = await db!.rawUpdate('''
-  //   UPDATE $bookTable SET lastPosition = ?, sectionIndex =? WHERE bookTitle = ?
-  //   ''', [position, bookName, section]);
-  //   return update;
-  // }
-
-  // Future<List<Book>> getAllBooks() async {
-  //   List<Book> booklist = [];
-  //   final db = await instance.database;
-  //   var maps = await db!.query(bookTable);
-
-  //   maps.forEach((element) {
-  //     booklist.add(Book.fromJson(element));
-  //   });
-
-  //   return booklist;
-  // }
-
-  // Future deleteBook(String bookName) async {
-  //   final db = await instance.database;
-  //   int del = await db!
-  //       .delete(bookTable, where: 'bookTitle =?', whereArgs: [bookName]);
-  //   print(del);
-  // }
+  Future deleteBook(String bookName) async {
+    final db = await instance.database;
+    await db!.delete(bookTable, where: 'bookTitle = ?', whereArgs: [bookName]);
+  }
 }

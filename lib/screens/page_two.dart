@@ -3,7 +3,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 //import 'package:shared_preferences/shared_preferences.dart';
 import '../sql/sql_functions.dart';
@@ -67,17 +67,13 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
       // print('A stream error occurred: $e');
     });
     try {
-      // Preloading audio is not currently supported on Linux.
       await _player.setAudioSource(_playlist);
-      String temp = await _player.sequenceState!.currentSource!.tag.album;
-      String currentSelection = temp.split(' -').first;
       setState(() {
-        currentTitle = currentSelection;
+        currentTitle = widget.selectedBook.bookTitle!;
       });
-      // await _player.setAudioSource(_playlist);
 
       Book currentPosition =
-          await context.read<SqlFunctions>().getSavedPosition(currentSelection);
+          await context.read<SqlFunctions>().getSavedPosition(currentTitle);
       if (currentPosition.bookTitle == 'Nothing saved') {
         Book initPos = Book(
             bookTitle: currentTitle,
@@ -123,72 +119,147 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
         return Future.value(true);
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Audiobooks'),
-          centerTitle: true,
-        ),
-        body: Container(
-          decoration: const BoxDecoration(
-              image: DecorationImage(
-            image: AssetImage("assets/images/gos2.jpg"),
-            fit: BoxFit.cover,
-          )),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              StreamBuilder<SequenceState?>(
-                  stream: _player.sequenceStateStream,
-                  builder: (context, snapshot) {
-                    final state = snapshot.data;
-                    if (state?.sequence.isEmpty ?? true) {
-                      return const SizedBox();
-                    }
-                    final metadata = state!.currentSource!.tag as MediaItem;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Image(
-                            image: MemoryImage(metadata.extras!['artwork']),
-                            fit: BoxFit.cover,
-                            width: 280,
-                          ),
-                        ),
-                        Text(metadata.album!),
-                        Text(metadata.title),
-                      ],
-                    );
-                  }),
-              ControlButtons(_player),
-              StreamBuilder<PositionData>(
-                stream: _positionDataStream,
-                builder: (context, snapshot) {
-                  final positionData = snapshot.data;
-                  return SeekBar(
-                    duration: positionData?.duration ?? Duration.zero,
-                    position: positionData?.position ?? Duration.zero,
-                    bufferedPosition:
-                        positionData?.bufferedPosition ?? Duration.zero,
-                    onChangeEnd: (newPosition) {
-                      _player.seek(newPosition);
-                    },
-                  );
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              backgroundColor: const Color(0x002e2e2e),
+              shadowColor: const Color(0x002e2e2e),
+              snap: true,
+              floating: true,
+              expandedHeight: 360,
+              flexibleSpace: FlexibleSpaceBar(
+                  background: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    StreamBuilder<SequenceState?>(
+                        stream: _player.sequenceStateStream,
+                        builder: (context, snapshot) {
+                          final state = snapshot.data;
+                          if (state?.sequence.isEmpty ?? true) {
+                            return const SizedBox();
+                          }
+                          final metadata =
+                              state!.currentSource!.tag as MediaItem;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Image(
+                                  image:
+                                      MemoryImage(metadata.extras!['artwork']),
+                                  // fit: BoxFit.fitHeight,
+                                  height: 160,
+                                  // width: 280,
+                                ),
+                              ),
+                              Text(metadata.album!),
+                              Text(metadata.title),
+                              ControlButtons(_player),
+                              StreamBuilder<PositionData>(
+                                stream: _positionDataStream,
+                                builder: (context, snapshot) {
+                                  final positionData = snapshot.data;
+                                  return SeekBar(
+                                    duration:
+                                        positionData?.duration ?? Duration.zero,
+                                    position:
+                                        positionData?.position ?? Duration.zero,
+                                    bufferedPosition:
+                                        positionData?.bufferedPosition ??
+                                            Duration.zero,
+                                    onChangeEnd: (newPosition) {
+                                      _player.seek(newPosition);
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        }),
+                  ],
+                ),
+              )),
+            ),
+            SliverToBoxAdapter(
+              child: ElevatedButton(
+                onPressed: () {
+                  print(widget.sections[0]);
                 },
+                child: Text('pp'),
               ),
-            ],
-          ),
-        ),
-        floatingActionButton: FloatingActionButton.small(
-          child: const Icon(Icons.exit_to_app),
-          onPressed: () async {
-            await context.read<SqlFunctions>().updatePosition(
-                currentTitle, _player.position, _player.currentIndex!);
-            dispose();
-            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-          },
+            )
+          ],
         ),
       ),
+      // child: Scaffold(
+      //   // appBar: AppBar(
+      //   //   title: const Text('Audiobooks'),
+      //   //   centerTitle: true,
+      //   // ),
+      //   body: Container(
+      //     decoration: const BoxDecoration(
+      //         image: DecorationImage(
+      //       image: AssetImage("assets/images/gos2.jpg"),
+      //       fit: BoxFit.cover,
+      //     )),
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         StreamBuilder<SequenceState?>(
+      //             stream: _player.sequenceStateStream,
+      //             builder: (context, snapshot) {
+      //               final state = snapshot.data;
+      //               if (state?.sequence.isEmpty ?? true) {
+      //                 return const SizedBox();
+      //               }
+      //               final metadata = state!.currentSource!.tag as MediaItem;
+      //               return Column(
+      //                 crossAxisAlignment: CrossAxisAlignment.center,
+      //                 children: [
+      //                   Padding(
+      //                     padding: const EdgeInsets.all(8.0),
+      //                     child: Image(
+      //                       image: MemoryImage(metadata.extras!['artwork']),
+      //                       fit: BoxFit.cover,
+      //                       width: 280,
+      //                     ),
+      //                   ),
+      //                   Text(metadata.album!),
+      //                   Text(metadata.title),
+      //                 ],
+      //               );
+      //             }),
+      //         ControlButtons(_player),
+      //         StreamBuilder<PositionData>(
+      //           stream: _positionDataStream,
+      //           builder: (context, snapshot) {
+      //             final positionData = snapshot.data;
+      //             return SeekBar(
+      //               duration: positionData?.duration ?? Duration.zero,
+      //               position: positionData?.position ?? Duration.zero,
+      //               bufferedPosition:
+      //                   positionData?.bufferedPosition ?? Duration.zero,
+      //               onChangeEnd: (newPosition) {
+      //                 _player.seek(newPosition);
+      //               },
+      //             );
+      //           },
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      //   floatingActionButton: FloatingActionButton.small(
+      //     child: const Icon(Icons.exit_to_app),
+      //     onPressed: () async {
+      //       await context.read<SqlFunctions>().updatePosition(
+      //           currentTitle, _player.position, _player.currentIndex!);
+      //       dispose();
+      //       SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      //     },
+      //   ),
+      // ),
     );
   }
 }
