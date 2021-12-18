@@ -5,7 +5,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
 //import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-//import 'package:shared_preferences/shared_preferences.dart';
+import '../models/section_model.dart';
 import '../sql/sql_functions.dart';
 import './common.dart';
 import '../models/book.dart';
@@ -25,6 +25,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   late String currentTitle;
   List<AudioSource> source = [];
   late AudioPlayer _player;
+  List<Section> sectionList = [];
   @override
   void initState() {
     super.initState();
@@ -50,7 +51,13 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
               // 'lastPosition': Duration.zero
             }, // check this
           ));
-
+      String sp = widget.sections[i].split('-').last;
+      String sectionName = sp.substring(0, sp.length - 4);
+      Section tempSection = Section(
+          sectionName: sectionName,
+          sectionSource: widget.sections[i],
+          sectionIndex: i);
+      sectionList.add(tempSection);
       source.add(bookSection);
     }
     _playlist = ConcatenatingAudioSource(children: source);
@@ -119,150 +126,138 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
         return Future.value(true);
       },
       child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              backgroundColor: const Color(0x002e2e2e),
-              shadowColor: const Color(0x002e2e2e),
-              snap: true,
-              floating: true,
-              expandedHeight: 360,
-              flexibleSpace: FlexibleSpaceBar(
-                  background: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    StreamBuilder<SequenceState?>(
-                        stream: _player.sequenceStateStream,
-                        builder: (context, snapshot) {
-                          final state = snapshot.data;
-                          if (state?.sequence.isEmpty ?? true) {
-                            return const SizedBox();
-                          }
-                          final metadata =
-                              state!.currentSource!.tag as MediaItem;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Image(
-                                  image:
-                                      MemoryImage(metadata.extras!['artwork']),
-                                  // fit: BoxFit.fitHeight,
-                                  height: 160,
-                                  // width: 280,
-                                ),
+        body: StreamBuilder<SequenceState?>(
+            stream: _player.sequenceStateStream,
+            builder: (context, snapshot) {
+              final state = snapshot.data;
+              if (state?.sequence.isEmpty ?? true) {
+                return const SizedBox();
+              }
+              final metadata = state!.currentSource!.tag as MediaItem;
+              return CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: const Color(0x002e2e2e),
+                    shadowColor: const Color(0x002e2e2e),
+                    snap: true,
+                    floating: true,
+                    expandedHeight: 360,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 10),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image(
+                                image: MemoryImage(metadata.extras!['artwork']),
+                                // fit: BoxFit.fitHeight,
+                                height: 160,
+                                // width: 280,
                               ),
-                              Text(metadata.album!),
-                              Text(metadata.title),
-                              ControlButtons(_player),
-                              StreamBuilder<PositionData>(
-                                stream: _positionDataStream,
-                                builder: (context, snapshot) {
-                                  final positionData = snapshot.data;
-                                  return SeekBar(
-                                    duration:
-                                        positionData?.duration ?? Duration.zero,
-                                    position:
-                                        positionData?.position ?? Duration.zero,
-                                    bufferedPosition:
-                                        positionData?.bufferedPosition ??
-                                            Duration.zero,
-                                    onChangeEnd: (newPosition) {
-                                      _player.seek(newPosition);
-                                    },
-                                  );
-                                },
-                              ),
-                            ],
-                          );
-                        }),
-                  ],
-                ),
-              )),
-            ),
-            SliverToBoxAdapter(
-              child: ElevatedButton(
-                onPressed: () {
-                  print(widget.sections[0]);
-                },
-                child: Text('pp'),
-              ),
-            )
-          ],
-        ),
+                            ),
+                            //      Text(metadata.id),
+                            Text(metadata.album!),
+                            Text(metadata.title),
+                            ControlButtons(_player),
+                            StreamBuilder<PositionData>(
+                              stream: _positionDataStream,
+                              builder: (context, snapshot) {
+                                final positionData = snapshot.data;
+                                return SeekBar(
+                                  duration:
+                                      positionData?.duration ?? Duration.zero,
+                                  position:
+                                      positionData?.position ?? Duration.zero,
+                                  bufferedPosition:
+                                      positionData?.bufferedPosition ??
+                                          Duration.zero,
+                                  onChangeEnd: (newPosition) {
+                                    _player.seek(newPosition);
+                                  },
+                                );
+                              },
+                            ),
+                          ]),
+                    ),
+                  ),
+                  SliverList(
+                    // itemExtent: 100,
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final section = sectionList[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Card(
+                            shape: int.parse(metadata.id) == index
+                                ? RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                    side: const BorderSide(color: Colors.white))
+                                : null,
+                            child: ListTile(
+                              title: Text(section.sectionName),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: sectionList.length,
+                    ),
+                  ),
+                ],
+              );
+            }),
       ),
-      // child: Scaffold(
-      //   // appBar: AppBar(
-      //   //   title: const Text('Audiobooks'),
-      //   //   centerTitle: true,
-      //   // ),
-      //   body: Container(
-      //     decoration: const BoxDecoration(
-      //         image: DecorationImage(
-      //       image: AssetImage("assets/images/gos2.jpg"),
-      //       fit: BoxFit.cover,
-      //     )),
-      //     child: Column(
-      //       mainAxisAlignment: MainAxisAlignment.center,
-      //       children: [
-      //         StreamBuilder<SequenceState?>(
-      //             stream: _player.sequenceStateStream,
-      //             builder: (context, snapshot) {
-      //               final state = snapshot.data;
-      //               if (state?.sequence.isEmpty ?? true) {
-      //                 return const SizedBox();
-      //               }
-      //               final metadata = state!.currentSource!.tag as MediaItem;
-      //               return Column(
-      //                 crossAxisAlignment: CrossAxisAlignment.center,
-      //                 children: [
-      //                   Padding(
-      //                     padding: const EdgeInsets.all(8.0),
-      //                     child: Image(
-      //                       image: MemoryImage(metadata.extras!['artwork']),
-      //                       fit: BoxFit.cover,
-      //                       width: 280,
-      //                     ),
-      //                   ),
-      //                   Text(metadata.album!),
-      //                   Text(metadata.title),
-      //                 ],
-      //               );
-      //             }),
-      //         ControlButtons(_player),
-      //         StreamBuilder<PositionData>(
-      //           stream: _positionDataStream,
-      //           builder: (context, snapshot) {
-      //             final positionData = snapshot.data;
-      //             return SeekBar(
-      //               duration: positionData?.duration ?? Duration.zero,
-      //               position: positionData?.position ?? Duration.zero,
-      //               bufferedPosition:
-      //                   positionData?.bufferedPosition ?? Duration.zero,
-      //               onChangeEnd: (newPosition) {
-      //                 _player.seek(newPosition);
-      //               },
-      //             );
-      //           },
-      //         ),
-      //       ],
-      //     ),
-      //   ),
-      //   floatingActionButton: FloatingActionButton.small(
-      //     child: const Icon(Icons.exit_to_app),
-      //     onPressed: () async {
-      //       await context.read<SqlFunctions>().updatePosition(
-      //           currentTitle, _player.position, _player.currentIndex!);
-      //       dispose();
-      //       SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-      //     },
-      //   ),
-      // ),
     );
   }
 }
+// body: CustomScrollView(
+//     slivers: [
+//       SliverAppBar(
+//         backgroundColor: const Color(0x002e2e2e),
+//         shadowColor: const Color(0x002e2e2e),
+//         snap: true,
+//         floating: true,
+//         expandedHeight: 360,
+//         flexibleSpace: FlexibleSpaceBar(
+//             background: Padding(
+//           padding: const EdgeInsets.all(8.0),
+//           child: Column(
+//             children: [
+//               StreamBuilder<SequenceState?>(
+//                   stream: _player.sequenceStateStream,
+//                   builder: (context, snapshot) {
+//                     final state = snapshot.data;
+//                     if (state?.sequence.isEmpty ?? true) {
+//                       return const SizedBox();
+//                     }
+//                     final metadata =
+//                         state!.currentSource!.tag as MediaItem;
+//                     return Column(
+//                       crossAxisAlignment: CrossAxisAlignment.center,
+//                       children: [
+//                         Padding(
+//                           padding: const EdgeInsets.all(8.0),
+//                           child: Image(
+//                             image:
+//                                 MemoryImage(metadata.extras!['artwork']),
+//                             // fit: BoxFit.fitHeight,
+//                             height: 160,
+//                             // width: 280,
+//                           ),
+//                         ),
+//                         Text(metadata.id),
+//                         Text(metadata.album!),
+//                         Text(metadata.title),
+//                       ],
+//                     );
+//                   }),
+//             ],
+//           ),
+//         )),
+//       ),
+
+//     ],
+//   ),
 
 class ControlButtons extends StatelessWidget {
   final AudioPlayer player;

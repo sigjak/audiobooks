@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:audiotagger/audiotagger.dart';
 import 'package:provider/provider.dart';
 import '../sql/sql_functions.dart';
-import './page_two.dart';
+import 'page_two.dart';
 import '../models/book.dart';
 
 import 'dart:io';
@@ -98,6 +98,55 @@ class _StartPageState extends State<StartPage> {
     bookList = [...availableBooks];
   }
 
+  Future<void> deleteAlert(int index, String bookName) async {
+    return showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text(
+              'Warning!',
+              textAlign: TextAlign.center,
+            ),
+            content: const Text(
+              'Delete this audiobook?',
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () async {
+                      Directory dir = dirList[index];
+                      dir.deleteSync(recursive: true);
+                      // remove from database
+                      await context
+                          .read<SqlFunctions>()
+                          .deleteBookEntry(bookName);
+                      setState(() {
+                        bookList.removeAt(index);
+                      });
+
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,15 +205,16 @@ class _StartPageState extends State<StartPage> {
                                   subtitle: Text(bookData.bookAuthor!),
                                   trailing: IconButton(
                                     onPressed: () async {
-                                      // Directory dir = dirList[index];
-                                      // dir.deleteSync(recursive: true);
-                                      // remove from database
-                                      await context
-                                          .read<SqlFunctions>()
-                                          .deleteBookEntry(bookData.bookTitle!);
-                                      setState(() {
-                                        bookList.removeAt(index);
-                                      });
+                                      deleteAlert(index, bookData.bookTitle!);
+                                      //   Directory dir = dirList[index];
+                                      //   dir.deleteSync(recursive: true);
+                                      //  // remove from database
+                                      //   await context
+                                      //       .read<SqlFunctions>()
+                                      //       .deleteBookEntry(bookData.bookTitle!);
+                                      //   setState(() {
+                                      //     bookList.removeAt(index);
+                                      //   });
                                     },
                                     icon: const Icon(Icons.delete),
                                   ),
