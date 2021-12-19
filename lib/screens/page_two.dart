@@ -146,7 +146,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                       background: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 20),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Image(
@@ -188,14 +188,22 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                         final section = sectionList[index];
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Card(
-                            shape: int.parse(metadata.id) == index
-                                ? RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                    side: const BorderSide(color: Colors.white))
-                                : null,
-                            child: ListTile(
-                              title: Text(section.sectionName),
+                          child: GestureDetector(
+                            onTap: () {
+                              _player.seek(Duration.zero,
+                                  index: section.sectionIndex);
+                              _player.play();
+                            },
+                            child: Card(
+                              shape: int.parse(metadata.id) == index
+                                  ? RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                      side:
+                                          const BorderSide(color: Colors.white))
+                                  : null,
+                              child: ListTile(
+                                title: Text(section.sectionName),
+                              ),
                             ),
                           ),
                         );
