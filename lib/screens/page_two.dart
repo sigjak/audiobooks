@@ -3,6 +3,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
+import 'dart:async';
 //import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/section_model.dart';
@@ -26,6 +27,12 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   List<AudioSource> source = [];
   late AudioPlayer _player;
   List<Section> sectionList = [];
+  List<int> sleepingTime = [10, 20, 30, 60];
+  late int sleepTime;
+  late Timer sleepTimer;
+  bool isLoaded = false;
+  bool isSleep = false;
+  String dropdownValue = 'Sleep';
   @override
   void initState() {
     super.initState();
@@ -61,6 +68,9 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
       source.add(bookSection);
     }
     _playlist = ConcatenatingAudioSource(children: source);
+    setState(() {
+      isLoaded = true;
+    });
   }
 
   Future<void> _init() async {
@@ -109,6 +119,22 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  goToSleep(int value) {
+    setState(() {
+      sleepTime = value;
+      isSleep = true;
+    });
+    sleepTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      setState(() {
+        sleepTime = value;
+      });
+      value--;
+      if (value <= 0) {
+        timer.cancel();
+      }
+    });
+  }
+
   Stream<PositionData> get _positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
           _player.positionStream,
@@ -137,6 +163,60 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
               return CustomScrollView(
                 slivers: [
                   SliverAppBar(
+                    actions: [
+                      isSleep
+                          ? Row(
+                              children: [
+                                Text(
+                                  'Will sleep in ${sleepTime.toString()} minutes',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    sleepTimer.cancel();
+                                    setState(() {
+                                      isSleep = false;
+                                    });
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text(
+                                        'Sleep canceled',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ));
+                                    //wdata.snack('Sleep cancelled !', context);
+                                  },
+                                  child: const Text('Cancel Sleep',
+                                      style: TextStyle(color: Colors.white)),
+                                )
+                              ],
+                            )
+                          : PopupMenuButton<int>(
+                              offset: const Offset(60, 40),
+                              child: const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Text('Sleep'),
+                              ),
+                              onSelected: (value) {
+                                goToSleep(value);
+                                // data.snack(
+                                //     'Sleeping in $value minutes', context);
+                              },
+                              itemBuilder: (context) {
+                                return sleepingTime.map((item) {
+                                  return PopupMenuItem<int>(
+                                    value: item,
+                                    child: Text('${item.toString()} minutes.'),
+                                  );
+                                }).toList();
+                              })
+                    ],
                     backgroundColor: const Color(0x002e2e2e),
                     shadowColor: const Color(0x002e2e2e),
                     snap: true,
@@ -146,15 +226,12 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                       background: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 20),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Image(
-                                image: MemoryImage(metadata.extras!['artwork']),
-                                // fit: BoxFit.fitHeight,
-                                height: 160,
-                                // width: 280,
-                              ),
+                            const SizedBox(height: 40),
+                            Image(
+                              image: MemoryImage(metadata.extras!['artwork']),
+                              // fit: BoxFit.fitHeight,
+                              height: 160,
+                              // width: 280,
                             ),
                             //      Text(metadata.id),
                             Text(metadata.album!),
@@ -181,36 +258,46 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                           ]),
                     ),
                   ),
-                  SliverList(
-                    // itemExtent: 100,
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final section = sectionList[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              _player.seek(Duration.zero,
-                                  index: section.sectionIndex);
-                              _player.play();
+                  isLoaded
+                      ? SliverList(
+                          // itemExtent: 100,
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final section = sectionList[index];
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    _player.seek(Duration.zero,
+                                        index: section.sectionIndex);
+                                    _player.play();
+                                  },
+                                  child: Card(
+                                    shape: int.parse(metadata.id) == index
+                                        ? RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                            side: const BorderSide(
+                                                color: Colors.white))
+                                        : null,
+                                    child: ListTile(
+                                      title: Text(section.sectionName),
+                                    ),
+                                  ),
+                                ),
+                              );
                             },
-                            child: Card(
-                              shape: int.parse(metadata.id) == index
-                                  ? RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                      side:
-                                          const BorderSide(color: Colors.white))
-                                  : null,
-                              child: ListTile(
-                                title: Text(section.sectionName),
-                              ),
-                            ),
+                            childCount: sectionList.length,
                           ),
-                        );
-                      },
-                      childCount: sectionList.length,
-                    ),
-                  ),
+                        )
+                      : const SliverToBoxAdapter(
+                          child: Center(
+                          child: SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: CircularProgressIndicator()),
+                        )),
                 ],
               );
             }),
@@ -218,54 +305,6 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     );
   }
 }
-// body: CustomScrollView(
-//     slivers: [
-//       SliverAppBar(
-//         backgroundColor: const Color(0x002e2e2e),
-//         shadowColor: const Color(0x002e2e2e),
-//         snap: true,
-//         floating: true,
-//         expandedHeight: 360,
-//         flexibleSpace: FlexibleSpaceBar(
-//             background: Padding(
-//           padding: const EdgeInsets.all(8.0),
-//           child: Column(
-//             children: [
-//               StreamBuilder<SequenceState?>(
-//                   stream: _player.sequenceStateStream,
-//                   builder: (context, snapshot) {
-//                     final state = snapshot.data;
-//                     if (state?.sequence.isEmpty ?? true) {
-//                       return const SizedBox();
-//                     }
-//                     final metadata =
-//                         state!.currentSource!.tag as MediaItem;
-//                     return Column(
-//                       crossAxisAlignment: CrossAxisAlignment.center,
-//                       children: [
-//                         Padding(
-//                           padding: const EdgeInsets.all(8.0),
-//                           child: Image(
-//                             image:
-//                                 MemoryImage(metadata.extras!['artwork']),
-//                             // fit: BoxFit.fitHeight,
-//                             height: 160,
-//                             // width: 280,
-//                           ),
-//                         ),
-//                         Text(metadata.id),
-//                         Text(metadata.album!),
-//                         Text(metadata.title),
-//                       ],
-//                     );
-//                   }),
-//             ],
-//           ),
-//         )),
-//       ),
-
-//     ],
-//   ),
 
 class ControlButtons extends StatelessWidget {
   final AudioPlayer player;
