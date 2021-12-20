@@ -100,7 +100,7 @@ class _StartPageState extends State<StartPage> {
 
   Future<void> deleteAlert(int index, String bookName) async {
     return showDialog(
-        barrierDismissible: false,
+        barrierDismissible: true,
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
@@ -123,8 +123,6 @@ class _StartPageState extends State<StartPage> {
                       child: const Text('Cancel')),
                   TextButton(
                     onPressed: () async {
-                      Directory dir = dirList[index];
-                      dir.deleteSync(recursive: true);
                       // remove from database
                       await context
                           .read<SqlFunctions>()
@@ -134,6 +132,8 @@ class _StartPageState extends State<StartPage> {
                       });
 
                       Navigator.of(context).pop();
+                      Directory dir = dirList[index];
+                      await dir.delete(recursive: true);
                     },
                     child: const Text(
                       'OK',

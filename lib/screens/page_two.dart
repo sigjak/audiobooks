@@ -45,18 +45,13 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   prepPlaylist() {
     for (int i = 0; i < widget.sections.length; i++) {
       var bookSection = AudioSource.uri(Uri.parse(widget.sections[i]),
-          // tag: AudioMetadata(
-          //     album: '${widget.selectedBook.bookTitle} - ${i + 1}',
-          //     title: widget.selectedBook.bookAuthor!,
-          //     artwork: widget.selectedBook.bookImage!)
           tag: MediaItem(
             id: i.toString(),
             album: '${widget.selectedBook.bookTitle} - ${i + 1}',
             title: widget.selectedBook.bookAuthor!,
             extras: {
               'artwork': widget.selectedBook.bookImage!,
-              // 'lastPosition': Duration.zero
-            }, // check this
+            },
           ));
       String sp = widget.sections[i].split('-').last;
       String sectionName = sp.substring(0, sp.length - 4);
@@ -258,6 +253,10 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                           ]),
                     ),
                   ),
+                  const SliverToBoxAdapter(
+                      child: SizedBox(
+                    height: 20,
+                  )),
                   isLoaded
                       ? SliverList(
                           // itemExtent: 100,
