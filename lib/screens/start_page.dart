@@ -59,6 +59,9 @@ class _StartPageState extends State<StartPage> {
   }
 
   Future<void> getBooksData() async {
+    dirList = [];
+    bookList = [];
+    listOfSections = [];
     String basePath = await getDirPath();
     Directory dir = Directory(basePath);
 
@@ -124,16 +127,31 @@ class _StartPageState extends State<StartPage> {
                   TextButton(
                     onPressed: () async {
                       // remove from database
+
                       await context
                           .read<SqlFunctions>()
                           .deleteBookEntry(bookName);
+
                       setState(() {
                         bookList.removeAt(index);
                       });
 
-                      Navigator.of(context).pop();
+                      //start Circular progress
+                      const CircularProgressIndicator();
                       Directory dir = dirList[index];
-                      await dir.delete(recursive: true);
+                      dir.deleteSync(recursive: true);
+
+                      setState(() {
+                        isLoaded = false;
+                      });
+
+                      getBooksData().then((_) {
+                        setState(() {
+                          isLoaded = true;
+                        });
+                      });
+
+                      Navigator.of(context).pop();
                     },
                     child: const Text(
                       'OK',
@@ -176,54 +194,80 @@ class _StartPageState extends State<StartPage> {
                   style: TextStyle(fontSize: 32),
                 ),
               ),
-              isLoaded
-                  ? Flexible(
-                      child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: bookList.length,
-                          itemBuilder: (context, index) {
-                            final bookData = bookList[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => PageTwo(
-                                            sections: listOfSections[index],
-                                            selectedBook: bookData)));
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20.0),
-                                child: ListTile(
-                                  leading: ClipRRect(
-                                    child: Image(
-                                      image: MemoryImage(bookData.bookImage!),
+              (isLoaded && bookList.isEmpty)
+                  ? const Text(
+                      'No Books available!',
+                      style: TextStyle(fontSize: 24),
+                    )
+                  : isLoaded
+                      ? Flexible(
+                          child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: bookList.length,
+                              itemBuilder: (context, index) {
+                                final bookData = bookList[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => PageTwo(
+                                                sections: listOfSections[index],
+                                                selectedBook: bookData)));
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20.0),
+                                    child: ListTile(
+                                      leading: ClipRRect(
+                                        child: Image(
+                                          image:
+                                              MemoryImage(bookData.bookImage!),
+                                        ),
+                                      ),
+                                      title: Text(bookData.bookTitle!),
+                                      subtitle: Text(bookData.bookAuthor!),
+                                      trailing: IconButton(
+                                        onPressed: () async {
+                                          await deleteAlert(
+                                              index, bookData.bookTitle!);
+
+                                          // setState(() {
+                                          //   isLoaded = false;
+                                          // });
+                                          // getBooksData().then((_) {
+                                          //   setState(() {
+                                          //     isLoaded = true;
+                                          //   });
+                                          // });
+
+                                          //   Directory dir = dirList[index];
+                                          //  await dir.delete(recursive: true);
+                                          //   // remove from database
+                                          //   await context
+                                          //       .read<SqlFunctions>()
+                                          //       .deleteBookEntry(bookData.bookTitle!);
+                                          //   setState(() {
+                                          //     bookList.removeAt(index);
+                                          //   });
+                                          //   print('BACKIN     NNNNNNNNN');
+                                          //   setState(() {
+                                          //     isLoaded = false;
+                                          //   });
+                                          //   getBooksData().then((_) {
+                                          //     setState(() {
+                                          //       isLoaded = true;
+                                          //     });
+                                          //   });
+                                        },
+                                        icon: const Icon(Icons.delete),
+                                      ),
                                     ),
                                   ),
-                                  title: Text(bookData.bookTitle!),
-                                  subtitle: Text(bookData.bookAuthor!),
-                                  trailing: IconButton(
-                                    onPressed: () async {
-                                      deleteAlert(index, bookData.bookTitle!);
-                                      //   Directory dir = dirList[index];
-                                      //   dir.deleteSync(recursive: true);
-                                      //  // remove from database
-                                      //   await context
-                                      //       .read<SqlFunctions>()
-                                      //       .deleteBookEntry(bookData.bookTitle!);
-                                      //   setState(() {
-                                      //     bookList.removeAt(index);
-                                      //   });
-                                    },
-                                    icon: const Icon(Icons.delete),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                    )
-                  : const CircularProgressIndicator(),
+                                );
+                              }),
+                        )
+                      : const CircularProgressIndicator(),
             ],
           ),
         ),

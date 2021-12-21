@@ -216,7 +216,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
                     shadowColor: const Color(0x002e2e2e),
                     snap: true,
                     floating: true,
-                    expandedHeight: 360,
+                    expandedHeight: 380,
                     flexibleSpace: FlexibleSpaceBar(
                       background: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
