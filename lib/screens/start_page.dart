@@ -25,6 +25,7 @@ class _StartPageState extends State<StartPage> {
   List<Directory> dirList = []; // list of Directory paths of available books
   List<Book> bookList = [];
   bool isLoaded = false;
+
   @override
   void initState() {
     getBooksData().then((_) {
@@ -84,7 +85,7 @@ class _StartPageState extends State<StartPage> {
       }
       listOfSections.add(sections);
     }
-
+    // print('mmmmmmmmmmmmmmmmmmmmmmmmmmm');
     for (int i = 0; i < listOfSections.length; i++) {
       Uint8List? tempImage =
           await tagger.readArtwork(path: listOfSections[i][0]);
@@ -102,66 +103,83 @@ class _StartPageState extends State<StartPage> {
   }
 
   Future<void> deleteAlert(int index, String bookName) async {
+    bool isDload = false;
     return showDialog(
         barrierDismissible: true,
         context: context,
         builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text(
-              'Warning!',
-              textAlign: TextAlign.center,
-            ),
-            content: const Text(
-              'Delete this audiobook?',
-              textAlign: TextAlign.center,
-            ),
-            actions: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              title: const Text(
+                'Warning!',
+                textAlign: TextAlign.center,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Cancel')),
-                  TextButton(
-                    onPressed: () async {
-                      // remove from database
-
-                      await context
-                          .read<SqlFunctions>()
-                          .deleteBookEntry(bookName);
-
-                      setState(() {
-                        bookList.removeAt(index);
-                      });
-
-                      //start Circular progress
-                      const CircularProgressIndicator();
-                      Directory dir = dirList[index];
-                      dir.deleteSync(recursive: true);
-
-                      setState(() {
-                        isLoaded = false;
-                      });
-
-                      getBooksData().then((_) {
-                        setState(() {
-                          isLoaded = true;
-                        });
-                      });
-
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(color: Colors.red),
-                    ),
+                  isDload
+                      ? const Text(
+                          'Deleting...',
+                          style: TextStyle(
+                              fontStyle: FontStyle.italic, fontSize: 18),
+                        )
+                      : const SizedBox(),
+                  const Text(
+                    'Delete this audiobook?',
+                    textAlign: TextAlign.center,
                   ),
                 ],
-              )
-            ],
-          );
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Cancel')),
+                    TextButton(
+                      onPressed: () async {
+                        // remove from database
+                        setState(() {
+                          isDload = true;
+                        });
+                        Future.delayed(const Duration(seconds: 2));
+                        await context
+                            .read<SqlFunctions>()
+                            .deleteBookEntry(bookName);
+                        // print('INdex nnnn    $index');
+                        // print(bookName);
+                        setState(() {
+                          bookList.removeAt(index);
+                        });
+                        Directory dir = dirList[index];
+                        dir.deleteSync(recursive: true);
+
+                        setState(() {
+                          isDload = false;
+                          isLoaded = false;
+                        });
+
+                        await getBooksData().then((_) {
+                          setState(() {
+                            isLoaded = true;
+                          });
+                        });
+                        //print(isLoaded);
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            );
+          });
         });
   }
 
@@ -184,9 +202,10 @@ class _StartPageState extends State<StartPage> {
           ),
           child: Column(
             children: [
-              const SizedBox(
-                height: 40,
-              ),
+              // const SizedBox(
+              //   height: 40,
+              // ),
+              // isDload ? const CircularProgressIndicator() : const SizedBox(),
               const Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Text(
@@ -235,30 +254,31 @@ class _StartPageState extends State<StartPage> {
                                           // setState(() {
                                           //   isLoaded = false;
                                           // });
-                                          // getBooksData().then((_) {
-                                          //   setState(() {
-                                          //     isLoaded = true;
-                                          //   });
-                                          // });
+                                          // // getBooksData().then((_) {
+                                          // //   setState(() {
+                                          // //     isLoaded = true;
+                                          // //   });
+                                          // // });
 
-                                          //   Directory dir = dirList[index];
-                                          //  await dir.delete(recursive: true);
-                                          //   // remove from database
-                                          //   await context
-                                          //       .read<SqlFunctions>()
-                                          //       .deleteBookEntry(bookData.bookTitle!);
-                                          //   setState(() {
-                                          //     bookList.removeAt(index);
-                                          //   });
-                                          //   print('BACKIN     NNNNNNNNN');
-                                          //   setState(() {
-                                          //     isLoaded = false;
-                                          //   });
-                                          //   getBooksData().then((_) {
-                                          //     setState(() {
-                                          //       isLoaded = true;
-                                          //     });
-                                          //   });
+                                          // Directory dir = dirList[index];
+                                          // dir.deleteSync(recursive: true);
+                                          // // remove from database
+                                          // await context
+                                          //     .read<SqlFunctions>()
+                                          //     .deleteBookEntry(bookData.bookTitle!);
+                                          // setState(() {
+                                          //   bookList.removeAt(index);
+                                          // });
+                                          // print('BACKIN     NNNNNNNNN');
+                                          // setState(() {
+                                          //   isLoaded = false;
+                                          // });
+                                          await getBooksData().then((_) {
+                                            setState(() {
+                                              isLoaded = true;
+                                            });
+                                          });
+                                          //  print(isLoaded);
                                         },
                                         icon: const Icon(Icons.delete),
                                       ),
