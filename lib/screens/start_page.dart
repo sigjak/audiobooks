@@ -119,15 +119,20 @@ class _StartPageState extends State<StartPage> {
                 children: [
                   isDload
                       ? const Text(
-                          'Deleting...',
+                          'Deleting... ',
                           style: TextStyle(
                               fontStyle: FontStyle.italic, fontSize: 18),
                         )
                       : const SizedBox(),
-                  const Text(
-                    'Delete this audiobook?',
-                    textAlign: TextAlign.center,
-                  ),
+                  !isDload
+                      ? const Text(
+                          'Delete this audiobook?',
+                          textAlign: TextAlign.center,
+                        )
+                      : const Text(
+                          'Please wait...',
+                          style: TextStyle(fontSize: 9),
+                        ),
                 ],
               ),
               actions: [
@@ -145,29 +150,29 @@ class _StartPageState extends State<StartPage> {
                         setState(() {
                           isDload = true;
                         });
-                        Future.delayed(const Duration(seconds: 2));
-                        await context
-                            .read<SqlFunctions>()
-                            .deleteBookEntry(bookName);
-                        // print('INdex nnnn    $index');
-                        // print(bookName);
-                        setState(() {
-                          bookList.removeAt(index);
-                        });
-                        Directory dir = dirList[index];
-                        dir.deleteSync(recursive: true);
+                        await Future.delayed(const Duration(seconds: 5));
+                        // await context
+                        //     .read<SqlFunctions>()
+                        //     .deleteBookEntry(bookName);
+                        // // print('INdex nnnn    $index');
+                        // // print(bookName);
+                        // setState(() {
+                        //   bookList.removeAt(index);
+                        // });
+                        // Directory dir = dirList[index];
+                        // dir.deleteSync(recursive: true);
 
-                        setState(() {
-                          isDload = false;
-                          isLoaded = false;
-                        });
+                        // setState(() {
+                        //   isDload = false;
+                        //   isLoaded = false;
+                        // });
 
-                        await getBooksData().then((_) {
-                          setState(() {
-                            isLoaded = true;
-                          });
-                        });
-                        //print(isLoaded);
+                        // await getBooksData().then((_) {
+                        //   setState(() {
+                        //     isLoaded = true;
+                        //   });
+                        // });
+                        // //print(isLoaded);
                         Navigator.of(context).pop();
                       },
                       child: const Text(
