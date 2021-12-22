@@ -150,7 +150,7 @@ class _StartPageState extends State<StartPage> {
                         setState(() {
                           isDload = true;
                         });
-                        await Future.delayed(const Duration(seconds: 2));
+                        await Future.delayed(const Duration(seconds: 1));
                         await context
                             .read<SqlFunctions>()
                             .deleteBookEntry(bookName);

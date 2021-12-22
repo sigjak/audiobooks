@@ -4,7 +4,8 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:rxdart/rxdart.dart';
 import 'dart:async';
-//import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/section_model.dart';
 import '../sql/sql_functions.dart';
@@ -53,7 +54,7 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
               'artwork': widget.selectedBook.bookImage!,
             },
           ));
-      String sp = widget.sections[i].split('-').last;
+      String sp = widget.sections[i].split('/').last;
       String sectionName = sp.substring(0, sp.length - 4);
       Section tempSection = Section(
           sectionName: sectionName,
@@ -126,6 +127,9 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
       value--;
       if (value <= 0) {
         timer.cancel();
+        dispose();
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+        exit(0);
       }
     });
   }
