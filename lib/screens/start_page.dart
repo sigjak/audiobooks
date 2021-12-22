@@ -150,28 +150,23 @@ class _StartPageState extends State<StartPage> {
                         setState(() {
                           isDload = true;
                         });
-                        await Future.delayed(const Duration(seconds: 5));
-                        // await context
-                        //     .read<SqlFunctions>()
-                        //     .deleteBookEntry(bookName);
-                        // // print('INdex nnnn    $index');
-                        // // print(bookName);
-                        // setState(() {
-                        //   bookList.removeAt(index);
-                        // });
-                        // Directory dir = dirList[index];
-                        // dir.deleteSync(recursive: true);
+                        await Future.delayed(const Duration(seconds: 2));
+                        await context
+                            .read<SqlFunctions>()
+                            .deleteBookEntry(bookName);
+                        // print('INdex nnnn    $index');
+                        // print(bookName);
+                        setState(() {
+                          bookList.removeAt(index);
+                        });
+                        Directory dir = dirList[index];
+                        dir.deleteSync(recursive: true);
 
-                        // setState(() {
-                        //   isDload = false;
-                        //   isLoaded = false;
-                        // });
+                        setState(() {
+                          isDload = false;
+                          isLoaded = false;
+                        });
 
-                        // await getBooksData().then((_) {
-                        //   setState(() {
-                        //     isLoaded = true;
-                        //   });
-                        // });
                         // //print(isLoaded);
                         Navigator.of(context).pop();
                       },
@@ -256,28 +251,6 @@ class _StartPageState extends State<StartPage> {
                                           await deleteAlert(
                                               index, bookData.bookTitle!);
 
-                                          // setState(() {
-                                          //   isLoaded = false;
-                                          // });
-                                          // // getBooksData().then((_) {
-                                          // //   setState(() {
-                                          // //     isLoaded = true;
-                                          // //   });
-                                          // // });
-
-                                          // Directory dir = dirList[index];
-                                          // dir.deleteSync(recursive: true);
-                                          // // remove from database
-                                          // await context
-                                          //     .read<SqlFunctions>()
-                                          //     .deleteBookEntry(bookData.bookTitle!);
-                                          // setState(() {
-                                          //   bookList.removeAt(index);
-                                          // });
-                                          // print('BACKIN     NNNNNNNNN');
-                                          // setState(() {
-                                          //   isLoaded = false;
-                                          // });
                                           await getBooksData().then((_) {
                                             setState(() {
                                               isLoaded = true;
