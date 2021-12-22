@@ -25,6 +25,7 @@ class _StartPageState extends State<StartPage> {
   List<Directory> dirList = []; // list of Directory paths of available books
   List<Book> bookList = [];
   bool isLoaded = false;
+  OverlayEntry? overlayEntry;
 
   @override
   void initState() {
@@ -102,84 +103,99 @@ class _StartPageState extends State<StartPage> {
     bookList = [...availableBooks];
   }
 
+  void showOverlay(BuildContext context) async {
+    OverlayState? overlayState = Overlay.of(context);
+    overlayEntry = OverlayEntry(builder: (context) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Material(child: CircularProgressIndicator()),
+          ],
+        ),
+      );
+    });
+    overlayState?.insert(overlayEntry!);
+  }
+
   Future<void> deleteAlert(int index, String bookName) async {
     bool isDload = false;
     return showDialog(
         barrierDismissible: true,
         context: context,
         builder: (BuildContext context) {
-          return StatefulBuilder(builder: (context, setState) {
-            return AlertDialog(
-              title: const Text(
-                'Warning!',
-                textAlign: TextAlign.center,
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
+          return AlertDialog(
+            title: const Text(
+              'Warning!',
+              textAlign: TextAlign.center,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                isDload
+                    ? const Text(
+                        'Deleting...',
+                        style: TextStyle(
+                            fontStyle: FontStyle.italic, fontSize: 18),
+                      )
+                    : const SizedBox(),
+                const Text(
+                  'Delete this audiobook?',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  isDload
-                      ? const Text(
-                          'Deleting...',
-                          style: TextStyle(
-                              fontStyle: FontStyle.italic, fontSize: 18),
-                        )
-                      : const SizedBox(),
-                  const Text(
-                    'Delete this audiobook?',
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Cancel')),
-                    TextButton(
-                      onPressed: () async {
-                        // remove from database
-                        setState(() {
-                          isDload = true;
-                        });
-                        Future.delayed(const Duration(seconds: 2));
-                        await context
-                            .read<SqlFunctions>()
-                            .deleteBookEntry(bookName);
-                        // print('INdex nnnn    $index');
-                        // print(bookName);
-                        setState(() {
-                          bookList.removeAt(index);
-                        });
-                        Directory dir = dirList[index];
-                        dir.deleteSync(recursive: true);
-
-                        setState(() {
-                          isDload = false;
-                          isLoaded = false;
-                        });
-
-                        await getBooksData().then((_) {
-                          setState(() {
-                            isLoaded = true;
-                          });
-                        });
-                        //print(isLoaded);
+                  TextButton(
+                      onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(color: Colors.red),
-                      ),
+                      child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () async {
+                      // remove from database
+                      showOverlay(context);
+                      // setState(() {
+                      //   isDload = true;
+                      // });
+                      Future.delayed(const Duration(seconds: 2));
+                      await context
+                          .read<SqlFunctions>()
+                          .deleteBookEntry(bookName);
+                      // print('INdex nnnn    $index');
+                      // print(bookName);
+                      setState(() {
+                        bookList.removeAt(index);
+                      });
+                      Directory dir = dirList[index];
+                      dir.deleteSync(recursive: true);
+
+                      setState(() {
+                        //  isDload = false;
+                        isLoaded = false;
+                      });
+
+                      await getBooksData().then((_) {
+                        setState(() {
+                          isLoaded = true;
+                        });
+                      });
+                      //print(isLoaded);
+                      overlayEntry?.remove();
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(color: Colors.red),
                     ),
-                  ],
-                )
-              ],
-            );
-          });
+                  ),
+                ],
+              )
+            ],
+          );
         });
   }
 
