@@ -69,6 +69,12 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     });
   }
 
+  Future<void> savePosition() async {
+    await context
+        .read<SqlFunctions>()
+        .updatePosition(currentTitle, _player.position, _player.currentIndex!);
+  }
+
   Future<void> _init() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.speech());
@@ -115,17 +121,18 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  goToSleep(int value) {
+  goToSleep(int value) async {
     setState(() {
       sleepTime = value;
       isSleep = true;
     });
-    sleepTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    sleepTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
       setState(() {
         sleepTime = value;
       });
       value--;
       if (value <= 0) {
+        await savePosition();
         timer.cancel();
         dispose();
         SystemChannels.platform.invokeMethod('SystemNavigator.pop');
@@ -146,8 +153,9 @@ class _PageTwoState extends State<PageTwo> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await context.read<SqlFunctions>().updatePosition(
-            currentTitle, _player.position, _player.currentIndex!);
+        await savePosition();
+        // await context.read<SqlFunctions>().updatePosition(
+        //     currentTitle, _player.position, _player.currentIndex!);
         return Future.value(true);
       },
       child: Scaffold(
